@@ -6,27 +6,22 @@
 //
 
 import SwiftUI
-import SwiftData
+import Alamofire
 
 @main
 struct AI_Challenge_5App: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    var network: NetworkService
+
+    init() {
+        let configuration = URLSessionConfiguration.af.default
+        let interceptor = RequestInterceptor(key: "")
+        network = NetworkService(session: Session(configuration: configuration, interceptor: interceptor))
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ChatDetailView(network: network)
         }
-        .modelContainer(sharedModelContainer)
     }
 }
