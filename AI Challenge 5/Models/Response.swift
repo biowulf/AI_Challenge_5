@@ -14,8 +14,3 @@ nonisolated struct ResponsePayload: Decodable, Sendable {
 nonisolated struct Choice: Decodable, Sendable {
     let message: Message
 }
-
-nonisolated struct Message: Decodable, Sendable {
-    let role: String
-    let content: String
-}

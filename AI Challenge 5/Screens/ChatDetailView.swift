@@ -10,7 +10,7 @@ import SwiftData
 
 struct ChatDetailView: View {
     @State private var inputText = ""
-    @State private var messages: [(sender: String, content: String)] = [] // Хранение сообщений
+    @State private var messages: [Message] = [] // Хранение сообщений
     var network: NetworkService
 
     init(network: NetworkService) {
@@ -23,7 +23,7 @@ struct ChatDetailView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(messages.indices, id: \.self) { index in
-                        MessageBubble(sender: messages[index].sender, content: messages[index].content)
+                        MessageBubble(message: messages[index])
                     }
                 }
                 .padding()
@@ -50,13 +50,17 @@ struct ChatDetailView: View {
     func sendMessage() {
         guard !inputText.isEmpty else { return }
 
-        messages.append(("User", inputText))
+        if messages.isEmpty {
+            messages.append(.init(role: .system, content: inputText))
+        } else {
+            messages.append(.init(role: .user, content: inputText))
+        }
 
-        network.fetch(from: inputText) { result in
+        network.fetch(for: messages) { result in
             switch result {
             case .success(let payload):
-                if let answer = payload.choices.first?.message.content {
-                    self.messages.append(("GigaChat", answer))
+                if let responseMessage = payload.choices.first?.message {
+                    self.messages.append(responseMessage)
                 }
             case .failure(let error):
                 print("Ошибка запроса: ", error.localizedDescription)

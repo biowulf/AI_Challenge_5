@@ -8,19 +8,22 @@
 import SwiftUI
 
 struct MessageBubble: View {
-    let sender: String
-    let content: String
+    let message: Message
+
+    var isUser: Bool {
+        message.role == .user || message.role == .system
+    }
 
     var body: some View {
         HStack {
-            if sender == "User" {
+            if isUser {
                 Spacer()
             }
-            Text(content)
+            Text(message.content)
                 .padding()
-                .background(sender == "User" ? Color.green.opacity(0.3) : Color.blue.opacity(0.3))
+                .background(isUser ? Color.green.opacity(0.3) : Color.blue.opacity(0.3))
                 .cornerRadius(10)
-            if sender != "User" {
+            if !isUser {
                 Spacer()
             }
         }
