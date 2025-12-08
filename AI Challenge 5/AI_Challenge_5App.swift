@@ -11,7 +11,7 @@ import Alamofire
 @main
 struct AI_Challenge_5App: App {
 
-    var network: NetworkService
+    private var network: NetworkService
 
     init() {
         let configuration = URLSessionConfiguration.af.default

@@ -53,6 +53,10 @@ struct ChatDetailView: View {
         if messages.isEmpty {
             messages.append(.init(role: .system, content: inputText))
         } else {
+            let newMessage = findSystemPromt(inputText)
+            if newMessage.role == .system {
+                messages[0] = newMessage
+            }
             messages.append(.init(role: .user, content: inputText))
         }
 
@@ -68,5 +72,14 @@ struct ChatDetailView: View {
         }
 
         inputText = "" // очищаем поле ввода
+    }
+
+    private func findSystemPromt(_ string: String) -> Message {
+        let sentencesInText = string.components(separatedBy: ". ")
+        let defaultMessage = Message(role: .user, content: string)
+        guard let first = sentencesInText.first,
+              first.contains("представь") || first.contains("ты")
+        else { return defaultMessage }
+        return Message(role: .system, content: first)
     }
 }
