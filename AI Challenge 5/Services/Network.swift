@@ -36,9 +36,9 @@ class NetworkService {
             messages.insert(addJSONSystemPromt(), at: 0)
         }
 
-        let dto = RequestModel(model: .chat2Pro,
+        let dto = RequestModel(model: .chat2,
                                messages: messages,
-                               temperature: 0,
+                               temperature: 1.2,
                                maxTokens: 350,
                                repetitionPenalty: 1,
                                updateInterval: 0,

@@ -11,6 +11,7 @@ import SwiftData
 struct ChatDetailView: View {
     @State private var inputText = ""
     @State private var messages: [Message] = [] // Хранение сообщений
+    @State private var isLoading = false
     var network: NetworkService
 
     init(network: NetworkService) {
@@ -24,6 +25,9 @@ struct ChatDetailView: View {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(messages.indices, id: \.self) { index in
                         MessageBubble(message: messages[index])
+                    }
+                    if isLoading {
+                        LoadingDots()
                     }
                 }
                 .padding()
@@ -60,7 +64,11 @@ struct ChatDetailView: View {
             messages.append(.init(role: .user, content: inputText))
         }
 
+        withAnimation {
+            isLoading = true
+        }
         network.fetch(for: messages) { result in
+            isLoading = false
             switch result {
             case .success(let payload):
                 if let responseMessage = payload.choices.first?.message {
