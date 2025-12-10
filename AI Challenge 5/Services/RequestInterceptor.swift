@@ -11,10 +11,13 @@ import Foundation
 
 final class RequestInterceptor: Alamofire.RequestInterceptor {
 
-    var key: String
+    let key: String
+    let yaKey: String
 
-    init(key: String) {
+    init(key: String,
+         yaKey: String) {
         self.key = key
+        self.yaKey = yaKey
     }
 
     func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<URLRequest, Error>) -> Void) {
@@ -22,7 +25,9 @@ final class RequestInterceptor: Alamofire.RequestInterceptor {
         var urlRequest = urlRequest
 
         /// Set the Authorization header value using the access token.
-        if !key.isEmpty {
+        if urlRequest.url?.host() == "llm.api.cloud.yandex.net" {
+            urlRequest.headers.add(.authorization(bearerToken: yaKey))
+        } else {
             urlRequest.headers.add(.authorization(bearerToken: key))
         }
 

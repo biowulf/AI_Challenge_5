@@ -15,7 +15,9 @@ struct AI_Challenge_5App: App {
 
     init() {
         let configuration = URLSessionConfiguration.af.default
-        let interceptor = RequestInterceptor(key: "")
+        let interceptor = RequestInterceptor(
+            key: "",
+            yaKey: "")
         network = NetworkService(session: Session(configuration: configuration, interceptor: interceptor))
     }
 

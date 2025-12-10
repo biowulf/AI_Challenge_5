@@ -12,6 +12,8 @@ struct ChatDetailView: View {
     @State private var inputText = ""
     @State private var messages: [Message] = [] // Хранение сообщений
     @State private var isLoading = false
+    @State private var isActiveDialog = false
+    @State private var gptAPI: GPTAPI = .gigachat
     var network: NetworkService
 
     init(network: NetworkService) {
@@ -21,6 +23,18 @@ struct ChatDetailView: View {
     var body: some View {
         VStack(alignment: .leading) {
             // Список сообщений
+            Button {
+                isActiveDialog = true
+            } label: {
+                HStack {
+                    Text(gptAPI.rawValue)
+                    Image(systemName: "checkmark")
+                        .foregroundColor(.accentColor)
+                        .padding(.leading, 2)
+                }
+            }
+            .padding()
+
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(messages.indices, id: \.self) { index in
@@ -50,7 +64,27 @@ struct ChatDetailView: View {
             }
             .padding()
         }
+        .confirmationDialog("", isPresented: $isActiveDialog) {
+            ForEach(GPTAPI.allCases, id: \.self) { api in
+                Button {
+                    gptAPI = api
+                    messages = []
+                } label: {
+                    HStack {
+                        Text(api.rawValue)
+                        if api == gptAPI {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+                }
+                // Выделяем выбранную опцию
+                .tint(api == gptAPI ? .accentColor : nil)
+            }
+        }
     }
+
     func sendMessage() {
         guard !inputText.isEmpty else { return }
 
@@ -67,15 +101,31 @@ struct ChatDetailView: View {
         withAnimation {
             isLoading = true
         }
-        network.fetch(for: messages) { result in
-            isLoading = false
-            switch result {
-            case .success(let payload):
-                if let responseMessage = payload.choices.first?.message {
-                    self.messages.append(responseMessage)
+
+        switch gptAPI {
+        case .gigachat:
+            network.fetch(for: messages) { result in
+                isLoading = false
+                switch result {
+                case .success(let payload):
+                    if let responseMessage = payload.choices.first?.message {
+                        self.messages.append(responseMessage)
+                    }
+                case .failure(let error):
+                    print("Ошибка запроса: ", error.localizedDescription)
                 }
-            case .failure(let error):
-                print("Ошибка запроса: ", error.localizedDescription)
+            }
+        case .yandex:
+            network.fetchYA(for: messages) { result in
+                isLoading = false
+                switch result {
+                case .success(let payload):
+                    if let responseMessage = payload.choices.first?.message {
+                        self.messages.append(responseMessage)
+                    }
+                case .failure(let error):
+                    print("Ошибка запроса: ", error.localizedDescription)
+                }
             }
         }
 
