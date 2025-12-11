@@ -27,13 +27,18 @@ nonisolated struct YAAlternative: Codable, Sendable {
 
 // Структура для поля "usage"
 nonisolated struct YAUsage: Codable, Sendable {
+    /// Количество токенов в текстовой части входных данных модели.
     let inputTextTokens: String
+    /// Количество токенов в сгенерированном варианте автодополнения.
     let completionTokens: String
+    /// Общее количество токенов, включая все входные токены и все сгенерированные токены.
     let totalTokens: String
+    /// Предоставляет дополнительную информацию о том, как использовались токены завершения.
     let completionTokensDetails: YACompletionTokensDetails
 }
 
 // Вложенная структура для "completionTokensDetails"
 nonisolated struct YACompletionTokensDetails: Codable, Sendable {
+    /// Количество токенов, используемых специально для внутренних рассуждений, выполняемых моделью.
     let reasoningTokens: String
 }

@@ -23,6 +23,18 @@ class NetworkService {
 
     let session: Session
 
+    let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        return encoder
+    }()
+
+    let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return decoder
+    }()
+
     init(session: Session) {
         self.session = session
     }
@@ -39,7 +51,7 @@ class NetworkService {
         let dto = RequestModel(model: .chat2,
                                messages: messages,
                                temperature: 0,
-                               maxTokens: 500,
+                               maxTokens: 100,
                                repetitionPenalty: 1,
                                updateInterval: 0,
                                stream: false)
@@ -47,9 +59,9 @@ class NetworkService {
         session.request("https://gigachat.devices.sberbank.ru/api/v1/chat/completions",
                         method: .post,
                         parameters: dto,
-                        encoder: .json)
+                        encoder: .json(encoder: encoder))
         .validate()
-        .responseDecodable(of: ResponsePayload.self) { response in
+        .responseDecodable(of: ResponsePayload.self, decoder: decoder) { response in
             print(dump(response.result))
             completion(response.result)
         }
@@ -58,7 +70,7 @@ class NetworkService {
 
     func fetchYA(for newMessages: [Message],
                format: Format = .text,
-               completion: @escaping (Result<ResponsePayload, AFError>) -> Void) {
+               completion: @escaping (Result<YAResponse, AFError>) -> Void) {
 
         var messages: [Message] = newMessages
         if format == .json && newMessages.first?.role != .system {
@@ -67,7 +79,7 @@ class NetworkService {
 
         let dto = YARequestModel(completionOptions: .init(stream: false,
                                                           temperature: 0,
-                                                          maxTokens: 500),
+                                                          maxTokens: 100),
                                  messages: messages.compactMap({ .init(role: $0.role,
                                                                        text: $0.content) }))
 
@@ -78,14 +90,7 @@ class NetworkService {
         .validate()
         .responseDecodable(of: YAResponse.self) { response in
             print(dump(response.result))
-            switch response.result {
-            case .success(let value):
-                let messages: [Choice] = value.result.alternatives.map({ .init(message: .init(role: $0.message.role,
-                                                                                              content: $0.message.text)) })
-                completion(.success(.init(choices: messages)))
-            case .failure(let error):
-                completion(.failure(error))
-            }
+            completion(response.result)
         }
 
     }
