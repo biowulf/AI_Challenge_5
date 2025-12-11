@@ -51,7 +51,7 @@ class NetworkService {
         let dto = RequestModel(model: .chat2,
                                messages: messages,
                                temperature: 0,
-                               maxTokens: 100,
+                               maxTokens: 500,
                                repetitionPenalty: 1,
                                updateInterval: 0,
                                stream: false)
@@ -79,7 +79,7 @@ class NetworkService {
 
         let dto = YARequestModel(completionOptions: .init(stream: false,
                                                           temperature: 0,
-                                                          maxTokens: 100),
+                                                          maxTokens: 500),
                                  messages: messages.compactMap({ .init(role: $0.role,
                                                                        text: $0.content) }))
 

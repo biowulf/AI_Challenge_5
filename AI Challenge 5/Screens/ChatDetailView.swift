@@ -14,8 +14,12 @@ struct ChatDetailView: View {
     @State private var isLoading = false
     @State private var isActiveDialog = false
     @State private var gptAPI: GPTAPI = .gigachat
-    @State private var isShowInfo: Bool = false
+    @State private var isShowInfo: Bool = true
     @State private var info: Info = .init()
+    @State private var collapseType: CollapseType = .none
+    @State private var isActiveCollapseDialog = false
+    @State private var collapsedChat: [Message] = []
+
     var network: NetworkService
 
     init(network: NetworkService) {
@@ -32,40 +36,48 @@ struct ChatDetailView: View {
                 }
             }
         }
-        .confirmationDialog("", isPresented: $isActiveDialog) {
-            ForEach(GPTAPI.allCases, id: \.self) { api in
-                Button {
-                    gptAPI = api
-                    messages = []
-                } label: {
-                    HStack {
-                        Text(api.rawValue)
-                        if api == gptAPI {
-                            Spacer()
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.accentColor)
-                        }
-                    }
-                }
-                // Выделяем выбранную опцию
-                .tint(api == gptAPI ? .accentColor : nil)
-            }
-        }
     }
 
     func sendMessage() {
         guard !inputText.isEmpty else { return }
 
-        if messages.isEmpty {
-            messages.append(.init(role: .system, content: inputText))
-        } else {
-            let newMessage = findSystemPromt(inputText)
-            if newMessage.role == .system {
-                messages[0] = newMessage
+//        if messages.isEmpty {
+//            messages.append(.init(role: .system, content: inputText))
+//        } else {
+            let newMessage = Message(role: .user, content: inputText)//findSystemPromt(inputText)
+//            if newMessage.role == .system {
+//                messages[0] = newMessage
+//            }
+            messages.append(newMessage)
+        collapsedChat.append(newMessage)
+//        }
+
+        sendMessages(collapsedChat) { responseMessage in
+            self.messages.append(responseMessage)
+            collapsedChat.append(responseMessage)
+
+            switch self.collapseType {
+            case .none: break
+            case .cut:
+                if collapsedChat.count > 5 {
+                    collapsedChat.remove(at: 0)
+                }
+            case .gpt:
+                if collapsedChat.count > 5 {
+                    let new = Message(role: .user, content: "напиши краткую выжимку нашего диалога выше.")
+                    collapsedChat.append(new)
+                    sendMessages(collapsedChat) { responseMessage in
+                        collapsedChat.removeAll()
+                        collapsedChat.append(responseMessage)
+                    }
+                }
             }
-            messages.append(.init(role: .user, content: inputText))
         }
 
+        inputText = "" // очищаем поле ввода
+    }
+
+    private func sendMessages(_ messages: [Message], completion: @escaping (Message) -> Void) {
         withAnimation {
             isLoading = true
         }
@@ -77,7 +89,7 @@ struct ChatDetailView: View {
                 switch result {
                 case .success(let payload):
                     if let responseMessage = payload.choices.first?.message {
-                        self.messages.append(responseMessage)
+                        completion(responseMessage)
                     }
                     let usage = payload.usage
 
@@ -102,7 +114,7 @@ struct ChatDetailView: View {
                 switch result {
                 case .success(let payload):
                     if let responseMessage = payload.result.alternatives.first?.message {
-                        self.messages.append(.init(role: responseMessage.role, content: responseMessage.text))
+                        completion(.init(role: responseMessage.role, content: responseMessage.text))
                     }
                     let usage = payload.result.usage
 
@@ -122,8 +134,6 @@ struct ChatDetailView: View {
                 }
             }
         }
-
-        inputText = "" // очищаем поле ввода
     }
 
     private func findSystemPromt(_ string: String) -> Message {
@@ -137,17 +147,9 @@ struct ChatDetailView: View {
 
     private var header: some View {
         HStack {
-            Button {
-                isActiveDialog = true
-            } label: {
-                HStack {
-                    Text(gptAPI.rawValue)
-                    Image(systemName: "checkmark")
-                        .foregroundColor(.accentColor)
-                        .padding(.leading, 2)
-                }
-            }
-            .padding()
+            gptTypeButton
+
+            collapseTypeButton
 
             Spacer()
 
@@ -235,5 +237,67 @@ struct ChatDetailView: View {
         }
         .padding()
         .background(Color.mint.opacity(0.2))
+    }
+
+    private var collapseTypeButton: some View {
+        Button {
+            isActiveCollapseDialog = true
+        } label: {
+            HStack {
+                Text(collapseType.rawValue)
+                Image(systemName: "checkmark")
+                    .foregroundColor(.accentColor)
+                    .padding(.leading, 2)
+            }
+        }
+        .padding()
+        .confirmationDialog("", isPresented: $isActiveCollapseDialog) {
+            ForEach(CollapseType.allCases, id: \.self) { type in
+                Button(role: (type == .none) ? .cancel : .confirm) {
+                    collapseType = type
+                } label: {
+                    HStack {
+                        Text(type.rawValue)
+                        if type == collapseType {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.accentColor)
+                                .padding(.leading, 2)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var gptTypeButton: some View {
+        Button {
+            isActiveDialog = true
+        } label: {
+            HStack {
+                Text(gptAPI.rawValue)
+                Image(systemName: "checkmark")
+                    .foregroundColor(.accentColor)
+                    .padding(.leading, 2)
+            }
+        }
+        .padding()
+        .confirmationDialog("", isPresented: $isActiveDialog) {
+            ForEach(GPTAPI.allCases, id: \.self) { api in
+                Button(role: (api == .yandex) ? .cancel : .confirm) {
+                    gptAPI = api
+                    messages = []
+                } label: {
+                    HStack {
+                        Text(api.rawValue)
+                        if api == gptAPI {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.accentColor)
+                                .padding(.leading, 2)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
