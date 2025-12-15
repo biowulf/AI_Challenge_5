@@ -23,7 +23,7 @@ struct AI_Challenge_5App: App {
 
     var body: some Scene {
         WindowGroup {
-            ChatDetailView(network: network)
+            ChatDetailView(viewModel: ChatDetailViewModel(network: network))
         }
     }
 }
