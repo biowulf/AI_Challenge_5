@@ -10,6 +10,7 @@ import SwiftData
 
 struct ChatDetailView: View {
     @Bindable var viewModel: ChatDetailViewModel
+    let mcpClient = MCPClient()
 
     init(viewModel: ChatDetailViewModel) {
         self.viewModel = viewModel
@@ -28,6 +29,10 @@ struct ChatDetailView: View {
         }
         .task {
             viewModel.loadState()
+            Task {
+                try await mcpClient.getTools("https://mcp.deepwiki.com/mcp")
+                try await mcpClient.getTools("https://remote.mcpservers.org/fetch/mcp")
+            }
         }
     }
 
